@@ -1,7 +1,7 @@
 import numpy as np
 import cv2 as cv
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple, List
 from dataclasses import dataclass, field
 
 
@@ -61,7 +61,7 @@ class FrameProcessorCV:
         
         openedMask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel)
         closedMask = cv.morphologyEx(openedMask, cv.MORPH_CLOSE, kernel)
-        dilatedMask = cv.morphologyEx(closedMask, cv.MORPH_DILATE, kernel, iterations=7)
+        dilatedMask = cv.morphologyEx(closedMask, cv.MORPH_DILATE, kernel, iterations=9)
         
         return dilatedMask
     
@@ -84,6 +84,25 @@ class FrameProcessorCV:
         # Return the labeled mask (labels) and the color mask for visualization
         return labels, colorMask
         # return colorMask
+        
+    def getBoundingBoxesFromLabels(self, labels):
+        bounding_boxes = []
+        unique_labels = np.unique(labels)
+        unique_labels = unique_labels[unique_labels != 0]  # omit bg
+        
+        for label in unique_labels:
+            # Find coordinates of the current label
+            y_coords, x_coords = np.where(labels == label)
+            
+            # Compute bounding box (x_min, y_min, width, height)
+            x_min, x_max = x_coords.min(), x_coords.max()
+            y_min, y_max = y_coords.min(), y_coords.max()
+            bounding_boxes.append((x_min, y_min, x_max - x_min, y_max - y_min))
+        
+        return bounding_boxes
+    
+    def getBboxCentroids(self, bboxes):
+        return [(x + w // 2, y + h // 2) for x, y, w, h in bboxes]
     
     # ====
     def __call__(self, image):
@@ -94,8 +113,11 @@ class FrameProcessorCV:
         blur = cv.GaussianBlur(imageCp, self.params.gaussianBlurSize, 0)
         mask = self.hsvThresholding(blur)
         morphedMask = self.maskMorphologyPipeline(mask)
-        separatedMask = self.separateObjects(morphedMask)
-        return cv.cvtColor(separatedMask, cv.COLOR_BGR2RGB)
+        labels, colorMask = self.separateObjects(morphedMask)
+        
+        bboxes = self.getBoundingBoxesFromLabels(labels)
+        
+        return (cv.cvtColor(colorMask, cv.COLOR_BGR2RGB), bboxes)
 
 
 
@@ -116,11 +138,31 @@ class FrameDebugger:
         
         return imageCp
     
-    def drawDetectionResults(self, bboxes):        
-        return
+    def drawBoundingBoxes(self, image: np.ndarray, bboxes: List[Tuple[int, int, int, int]]):
+        '''Draw bounding boxes on the image'''
+        imageCp = image.copy()
+        for bbox in bboxes:
+            x, y, w, h = bbox
+            cv.rectangle(imageCp, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green box
+        return imageCp
     
-    def __call__(self, image, info: Dict[str, Any], bboxes=None):
+    def drawBboxCentroids(self, image: np.ndarray, bboxes: List[Tuple[int, int, int, int]]):
+        '''Draw centroids of bounding boxes on the image'''
+        imageCp = image.copy()
+        for bbox in bboxes:
+            x, y, w, h = bbox
+            cx, cy = x + w // 2, y + h // 2  # Calculate the centroid
+            cv.circle(imageCp, (cx, cy), 5, (0, 0, 255), -1)  # Red dot
+        return imageCp
+    
+    def __call__(self, image, info: Dict[str, Any]):
         '''draw debuggin info onto screentshot'''
+        bboxes = info.get('bboxes', [])
+        
         resImage = self.drawTextInfo(image.copy(), info)
+        resImage = self.drawBoundingBoxes(resImage, bboxes)
+        resImage = self.drawBboxCentroids(resImage, bboxes)
         
         return resImage
+
+

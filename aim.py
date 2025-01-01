@@ -13,6 +13,13 @@ class Aimbot:
     def lockTarget(self):
         pass
     
+    def resetTarget(self):
+        pass
+    
+    def mainLoop(self):
+        
+        return
+    
 
     
     

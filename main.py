@@ -27,13 +27,14 @@ def main():
             break
         
         currentTime = time()
-        processedFrame = frameProc(currentFrame)
+        processedFrame, bboxes = frameProc(currentFrame)
         
         deltaTime = currentTime - prevTime
         fps = int(1 / deltaTime)
         
         debugInfo = {
-            'fps': fps
+            'fps': fps,
+            'bboxes': bboxes
         }
         
         resFrame = frameDebugger(processedFrame, debugInfo)
