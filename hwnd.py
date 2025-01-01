@@ -60,7 +60,8 @@ class WindowHandler:
             self.hwnd.height
         )
         screenshot = np.array(pyautogui.screenshot(region=region))
-        return cv.cvtColor(screenshot, cv.COLOR_BGR2RGB)
+        # return cv.cvtColor(screenshot, cv.COLOR_BGR2RGB)
+        return screenshot
 
     def windowIsFocused(self):
         

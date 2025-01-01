@@ -16,6 +16,9 @@ class PIDController():
         # function returns how much should i step particular shit
         return
     
+    def reset(self):
+        pass
+    
     def __call__(self):
         pass
 
