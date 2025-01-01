@@ -31,7 +31,7 @@ class FrameProcessorCV:
         '''main pipeline for frame transformation'''
         pass
 
-    
+
 class FrameDebugger:
     
     def __init__(self):
