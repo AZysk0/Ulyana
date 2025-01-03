@@ -3,7 +3,7 @@ from vision import FrameProcessorCV, ProcessingParams, FrameDebugger
 import cv2 as cv
 from time import time
 
-# 8591
+
 def main():
     handler = WindowHandler(windowTitle='Quake 3')
     

@@ -8,9 +8,9 @@ Real = Union[float | int]
 
 @dataclass(frozen=True)
 class PIDParams:
-    kp: float = 0.01
-    ki: float = 0.01
-    kd: float = 0.01
+    kp: float = 6
+    ki: float = 1.0
+    kd: float = 0.05
     intMinLimit: float = -10
     intMaxLimit: float = 10
 

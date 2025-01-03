@@ -43,9 +43,12 @@ class AutoAimBot:
             self.prevTargetPos = None
             return
         
+        if self.prevTargetPos:
+            return
+        
         def bboxArea(bbox):
             _, _, w, h = bbox
-            return int(w * h)
+            return w * h
         
         # get random target from top 3 largest (nearest to player in-game) bboxes
         targetBboxesSorted = sorted(bboxes, key=bboxArea, reverse=True)
@@ -54,7 +57,7 @@ class AutoAimBot:
         self.prevTargetPos = targetCentroid
     
     def updateCurrentTarget(self, bboxes) -> None:
-        '''get centroid that is nearest to target from previous state''' 
+        '''get centroid that is nearest to target from previous state'''
         
         if self.prevTargetPos is None or not bboxes:
             return
@@ -90,15 +93,14 @@ class AutoAimBot:
             yawAdjustment = self.yawController.step(dt, 0, targetOffset[0])
             pitchAdjustment = self.pitchController.step(dt, 0, targetOffset[1])
 
-            self.mouseController.moveBy(int(yawAdjustment), int(-pitchAdjustment))
-    
-    def moveMouse(self, x, y):
-        return
+            self.mouseController.moveBy(int(yawAdjustment), int(pitchAdjustment))
     
     def mainLoop(self):
         
+        self.hWnd.focusCurrentWindow()
+        
         while True:
-            self.hWnd.focusCurrentWindow()
+            # self.hWnd.focusCurrentWindow()
             
             prevTime = time.time()
             
@@ -106,14 +108,32 @@ class AutoAimBot:
             
             processedFrame, bboxes = self.frameProc(currentFrame)
             
-            
+            if not bboxes:
+                self.resetTarget()
             
             currTime = time.time()
             dt = currTime - prevTime
-            fps = int(1 / dt)
+            
+            self.chooseTarget(bboxes)
+            self.update(dt, currentFrame)
+            
+            if cv.waitKey(1) & 0xFF == ord('q'):
+                break
+            
+            dtDebug = time.time() - prevTime
+            fps = int(1 / dtDebug)
+            
+            debugInfo = {
+                'fps': fps,
+                'bboxes': bboxes
+            }
+            
+            resFrame = self.frameDebugger(processedFrame, debugInfo)
+            self.updateCurrentTarget(bboxes)
+            
+            cv.imshow(f"Aimbot eyes", resFrame)
         
-        return
-
+        cv.destroyAllWindows()
 
 
 class AutoFireBot:
