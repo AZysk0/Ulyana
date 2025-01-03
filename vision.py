@@ -117,7 +117,8 @@ class FrameProcessorCV:
         
         bboxes = self.getBoundingBoxesFromLabels(labels)
         
-        return (cv.cvtColor(colorMask, cv.COLOR_BGR2RGB), bboxes)
+        # return (cv.cvtColor(colorMask, cv.COLOR_BGR2RGB), bboxes)
+        return (cv.cvtColor(morphedMask, cv.COLOR_BGR2RGB), bboxes)
 
 
 

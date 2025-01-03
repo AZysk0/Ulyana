@@ -1,60 +1,66 @@
 import numpy as np
 
+from dataclasses import dataclass, field
 from typing import Iterable, Union
-
 
 Real = Union[float | int]
 
 
-class PIDController():
-    
-    def __init__(self, pid_coefs: Iterable[Real]):
-        self.pid_coefs = np.array(pid_coefs).astype(np.float32)
-        self.prop = 0
-        self.prevError = 0
-        self.integral = 0
-    
-    def step(self, dt: float, current: Real, target: Real) -> Real:
+@dataclass(frozen=True)
+class PIDParams:
+    kp: float = 0.01
+    ki: float = 0.01
+    kd: float = 0.01
+    intMinLimit: float = -10
+    intMaxLimit: float = 10
+
+
+class PIDController:
+    def __init__(self, params: PIDParams=PIDParams()):
         """
-        Compute the control action based on the current state and target.
+        Initialize the PID controller with parameters.
 
         Args:
-            dt (float): Time step.
-            current (Real): Current value of the system variable.
-            target (Real): Desired target value.
-
-        Returns:
-            Real: The computed control action.
+            params (PIDParams): An instance of PIDParams containing PID coefficients and integral limits.
         """
-        # TODO: 
-        # - Calculate the error (difference between target and current).
-        # - Compute the proportional, integral, and derivative terms.
-        # - Combine terms using PID coefficients.
-        # - Return the control action value.
-        return 0  # Placeholder
+        self.params = params
+        
+        self.pTerm = 0
+        self.iTerm = 0
+        self.dTerm = 0
+        
+        self.prevError = 0  # for derivative term
+
+    def step(self, dt: float, current: Real, target: Real) -> Real:
+
+        if dt == 0:
+            raise ValueError("dt cannot be zero")
+
+        error = target - current
+        
+        self.pTerm = error
+
+        # integral with windup clamping
+        self.iTerm += error * dt
+        self.iTerm = max(min(self.iTerm, self.params.intMaxLimit), self.params.intMinLimit)
+
+        self.dTerm = (error - self.prevError) / dt
+
+        self.prevError = error
+
+        resP = self.params.kp * self.pTerm
+        resI = self.params.ki * self.iTerm
+        resD = self.params.kd * self.dTerm
+        
+        return resP + resI + resD
 
     def reset(self):
-        """
-        Reset the PID controller's internal state.
-        """
-        # TODO:
-        # - Set proportional, integral, and previous error terms to zero.
-        self.prop = 0
-        self.prev_error = 0
-        self.integral = 0
+        self.pTerm = 0
+        self.iTerm = 0
+        self.dTerm = 0
+        self.prevError = 0
 
     def __call__(self, dt: float, current: Real, target: Real) -> Real:
-        """
-        Callable interface for the PID controller.
-
-        Args:
-            dt (float): Time step.
-            current (Real): Current value of the system variable.
-            target (Real): Desired target value.
-
-        Returns:
-            Real: The computed control action.
-        """
         # TODO:
         # - Forward the call to the `step` method for easy usage.
         return self.step(dt, current, target)
