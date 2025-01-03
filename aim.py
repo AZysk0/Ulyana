@@ -1,51 +1,116 @@
 import numpy as np
 import random
-import pyautogui
+# import pyautogui
+import cv2 as cv
+import time
 
+from hwnd import WindowHandler
+from events import Mouse
 from control import PIDController, PIDParams
-from vision import FrameProcessorCV
+from vision import FrameProcessorCV, ProcessingParams, FrameDebugger
+import utils
+
+from typing import List, Tuple, Iterable, Any
+
 
 class AutoAimBot:
     
-    def __init__(self):
+    def __init__(
+        self, 
+        windowTitle: str, 
+        processingParams: ProcessingParams=ProcessingParams()
+    ) -> None:
+        
         self.yawController = PIDController()
         self.pitchController = PIDController()
-        self.frameProcessor = FrameProcessorCV()
-        self.prevTargetPos = (0, 0)  # pos on image
+        
+        self.hWnd = WindowHandler(windowTitle=windowTitle)
+        self.mouseController = Mouse()
+        
+        self.processingParams = ProcessingParams()
+        self.frameProc = FrameProcessorCV(params=self.processingParams)
+        
+        self.frameDebugger = FrameDebugger()
+        
+        self.prevTargetPos: Tuple[int, int] | None = None  # pos on image
+
+    def getTargetCentroids(self, bboxes) -> List[Tuple[int, int]]:
+        return [(x + w // 2, y + h // 2) for x, y, w, h in bboxes]
     
-    def chooseTarget(self, targetCentroids):
-        '''targets - list of centroids of bboxes of separated objects'''
+    def chooseTarget(self, bboxes) -> None:  # side-effect
         
-        # sort by distance to the center
+        if not bboxes:
+            self.prevTargetPos = None
+            return
         
-        # get random from 3 nearest (if more than 3 targets on the screen)
+        def bboxArea(bbox):
+            _, _, w, h = bbox
+            return int(w * h)
         
-        return
+        # get random target from top 3 largest (nearest to player in-game) bboxes
+        targetBboxesSorted = sorted(bboxes, key=bboxArea, reverse=True)
+        randomTargetBbox = random.choice(targetBboxesSorted[:3])
+        targetCentroid = self.getTargetCentroids([randomTargetBbox])[0]
+        self.prevTargetPos = targetCentroid
     
-    def updateCurrentTarget(self):
-        '''get centroid that is nearest to target from previous state'''        
+    def updateCurrentTarget(self, bboxes) -> None:
+        '''get centroid that is nearest to target from previous state''' 
         
-        return
+        if self.prevTargetPos is None or not bboxes:
+            return
+
+        centroids = self.getTargetCentroids(bboxes)
+
+        prevPos = np.array(self.prevTargetPos)
+        distances = [utils.distL2(prevPos, np.array(centroid)) for centroid in centroids]
+
+        nearestIdx = np.argmin(distances)
+        self.prevTargetPos = centroids[nearestIdx]
     
     def lockTarget(self):
         '''rly idk if i need it'''
         raise NotImplementedError
     
-    def resetTarget(self):
+    def resetTarget(self) -> None:
         '''choose new target that is not current and reset PID-controllers'''
-        raise NotImplementedError
+        
+        self.yawController.reset()
+        self.pitchController.reset()
+        self.prevTargetPos = None
     
-    def processFrame(self):
-        return
+    def update(self, dt, frame) -> None:
+        '''step over PID-controllers and move mouse'''
+        
+        h, w = frame.shape[:2]
+        pidTarget = np.array([w // 2, h // 2])
+
+        if self.prevTargetPos is not None:
+            targetOffset = np.array(self.prevTargetPos) - pidTarget
+
+            yawAdjustment = self.yawController.step(dt, 0, targetOffset[0])
+            pitchAdjustment = self.pitchController.step(dt, 0, targetOffset[1])
+
+            self.mouseController.moveBy(int(yawAdjustment), int(-pitchAdjustment))
     
-    def update(self) -> None:
-        '''step over PID-controllers'''
-        return
-    
-    def moveMouse(self):
+    def moveMouse(self, x, y):
         return
     
     def mainLoop(self):
+        
+        while True:
+            self.hWnd.focusCurrentWindow()
+            
+            prevTime = time.time()
+            
+            currentFrame = self.hWnd.takeScreenshot()
+            
+            processedFrame, bboxes = self.frameProc(currentFrame)
+            
+            
+            
+            currTime = time.time()
+            dt = currTime - prevTime
+            fps = int(1 / dt)
         
         return
 
@@ -54,10 +119,10 @@ class AutoAimBot:
 class AutoFireBot:
     
     def __init__(self):
-        pass
+        raise NotImplementedError
     
     def mainLoop(self):
+        raise NotImplementedError
 
 
-    
-    
+

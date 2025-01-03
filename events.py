@@ -3,7 +3,6 @@ from typing import Tuple, Any, Literal
 
 
 class Mouse:
-    
     # init some constans for mouse events
     # source https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-mouse_event
     MOUSEEVENTF_MOVE = 0x0001
@@ -16,6 +15,9 @@ class Mouse:
     
     def __init__(self):
         self.pressedButtons = set()
+        
+        # use these guys later
+        # self.movementVelocity = (0, 0)
     
     def moveBy(self, dx, dy):
         ctypes.windll.user32.mouse_event(self.MOUSEEVENTF_MOVE, dx, dy, 0, 0)
@@ -53,6 +55,18 @@ class Mouse:
         else:
             raise ValueError(f"Unsupported or unpressed button: {mouseBtn}")
 
+    def moveSmoothlyTo(self, x, y, timeElapse):
+        raise NotImplementedError
+    
+    def setVelocity(self, vx, vy):
+        raise NotImplementedError
+    
+    def update(self):
+        '''
+        method that will update state of the mouse 
+        (mostly for smooth implementations of movement)
+        '''
+        raise NotImplementedError
 
 
 class Keyboard:
@@ -62,7 +76,6 @@ class Keyboard:
     
     def pressBtn(self, btn: str) -> None:
         raise NotImplementedError
-        
 
 
 class KeyboardInputHandler:

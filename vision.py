@@ -32,8 +32,7 @@ class ProcessingParams:
             "hsvMin": self.hsvMin.tolist(),
             "hsvMax": self.hsvMax.tolist()
         }
-    
-    
+
 
 class FrameProcessorCV:
     
@@ -100,9 +99,6 @@ class FrameProcessorCV:
             bounding_boxes.append((x_min, y_min, x_max - x_min, y_max - y_min))
         
         return bounding_boxes
-    
-    def getBboxCentroids(self, bboxes):
-        return [(x + w // 2, y + h // 2) for x, y, w, h in bboxes]
     
     # ====
     def __call__(self, image):
