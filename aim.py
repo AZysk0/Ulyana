@@ -5,7 +5,7 @@ import cv2 as cv
 import time
 
 from hwnd import WindowHandler
-from events import Mouse
+from events import Mouse, KeyboardInputHandler
 from control import PIDController, PIDParams
 from vision import FrameProcessorCV, ProcessingParams, FrameDebugger
 import utils
@@ -26,6 +26,7 @@ class AutoAimBot:
         
         self.hWnd = WindowHandler(windowTitle=windowTitle)
         self.mouseController = Mouse()
+        self.keyboardListener = KeyboardInputHandler()
         
         self.processingParams = ProcessingParams()
         self.frameProc = FrameProcessorCV(params=self.processingParams)
@@ -76,7 +77,6 @@ class AutoAimBot:
     
     def resetTarget(self) -> None:
         '''choose new target that is not current and reset PID-controllers'''
-        
         self.yawController.reset()
         self.pitchController.reset()
         self.prevTargetPos = None
@@ -101,6 +101,8 @@ class AutoAimBot:
         
         while True:
             # self.hWnd.focusCurrentWindow()
+            
+            currentKeystate = self.keyboardListener._currentState
             
             prevTime = time.time()
             

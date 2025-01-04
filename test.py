@@ -6,21 +6,25 @@ import ctypes
 from aim import AutoAimBot
 
 # mouse = Mouse()
-# aimbot = AutoAimBot(windowTitle='Quake 3: Arena')
-# aimbot.mainLoop()
+aimbot = AutoAimBot(windowTitle='Quake 3: Arena')
+aimbot.mainLoop()
 
-keyboardListener = KeyboardInputHandler()
+# keyboardListener = KeyboardInputHandler()
 
-def main():
-    try:
-        while True:
-            keysPressed = keyboardListener.getState()
-            if keysPressed:
-                print(f"Keys pressed: {keysPressed}")
-            time.sleep(0.1)
-    except KeyboardInterrupt:
-        print("Exiting...")
+# def main():
+#     try:
+#         while True:
+#             keysPressed = keyboardListener.getState()
+#             if keysPressed:
+#                 print(f"Keys pressed: {keysPressed}")
+#             time.sleep(0.1)
+#     except KeyboardInterrupt:
+#         print("Exiting...")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
+
+
+
+

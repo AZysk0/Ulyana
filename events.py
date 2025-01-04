@@ -90,24 +90,54 @@ class KeyboardInputHandler:
     INVERSE_MAP = {v: k for k, v in VK_CODES.items()}
 
     def __init__(self):
-        pass
+        self.prevState: Set[str] = set()  # human-readable
+        self._previousStateHex
 
-    def getState(self) -> Set[str]:
-        '''human-readable'''
+    @property
+    def _currentState(self) -> Set[str]:
+        '''
+        get keys that are currently pressed
+        human-readable ver
+        '''
         pressed_keys = set()
         for name, vk in self.VK_CODES.items():
             if ctypes.windll.user32.GetAsyncKeyState(vk) & 0x8000:
                 pressed_keys.add(name)
         return pressed_keys
 
-    def getStateHex(self) -> Set[str]:
+    @property
+    def _currentStateHex(self) -> Set[int]:
         """not-human-readable"""
         pressed_keys = set()
         for vk_code in range(0x08, 0xFE):
             if ctypes.windll.user32.GetAsyncKeyState(vk_code) & 0x8000:
                 key_name = self.INVERSE_MAP.get(vk_code, f"VK_{vk_code}")
-                pressed_keys.add(key_name)
+                pressed_keys.add(vk_code)  # Add the key code, not the key name
         return pressed_keys
 
-
+    @property
+    def pressedKeys(self) -> Set[str]:
+        '''Returns the set of keys pressed since the last update (human-readable)'''
+        return self._currentState.difference(self.prevState)
     
+    @property
+    def releasedKeys(self) -> Set[str]:
+        '''Returns the set of keys released since the last update (human-readable)'''
+        return self.prevState.difference(self._currentState)
+
+    @property
+    def pressedKeysHex(self) -> Set[int]:
+        '''Returns the set of keys pressed since the last update (hex codes)'''
+        return self._currentStateHex.difference(self._previousStateHex)
+    
+    @property
+    def releasedKeysHex(self) -> Set[int]:
+        '''Returns the set of keys released since the last update (hex codes)'''
+        return self._previousStateHex.difference(self._currentStateHex)
+    
+    def updateKeyboard(self) -> None:
+        self.prevState = self._currentState
+        self._previousStateHex = self._currentStateHex
+
+
+
