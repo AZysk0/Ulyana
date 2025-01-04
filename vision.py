@@ -100,6 +100,27 @@ class FrameProcessorCV:
         
         return bounding_boxes
     
+    def simpleMorphPipeline(self, image):
+        imageCp = image.copy()
+        
+        kernel  = cv.getStructuringElement(self.params.morphKernelShape, self.params.morphKernelSize)
+        dilated = cv.morphologyEx(imageCp, cv.MORPH_DILATE, kernel, iterations=5)
+        
+        return dilated
+        
+    
+    def simpleVisionPipeline(self, image) -> Tuple[np.ndarray, List[np.ndarray]]:
+        
+        imageCp = image.copy()
+        mask = self.hsvThresholding(imageCp)
+        morphedMask = self.simpleMorphPipeline(mask)
+        labels, colorMask = self.separateObjects(morphedMask)
+        bboxes = self.getBoundingBoxesFromLabels(labels)
+        
+        # return (cv.cvtColor(colorMask, cv.COLOR_BGR2RGB), bboxes)
+        return (cv.cvtColor(morphedMask, cv.COLOR_BGR2RGB), bboxes)
+        
+    
     # ====
     def __call__(self, image):
         '''main pipeline for frame transformation'''
@@ -124,7 +145,6 @@ class FrameDebugger:
         pass
     
     def drawTextInfo(self, image: np.ndarray, info: Dict[str, Any]):
-        '''Draw the textual debugging info (fps, object count, etc.) onto the image'''
         position = (10, 30)
         imageCp = image.copy()
         for key, value in info.items():

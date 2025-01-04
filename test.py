@@ -3,11 +3,14 @@ import math
 from events import Mouse, KeyboardInputHandler
 import ctypes
 
-from aim import AutoAimBot
+from aim import AutoAimBot, AutoFireBot
 
 # mouse = Mouse()
 aimbot = AutoAimBot(windowTitle='Quake 3: Arena')
 aimbot.mainLoop()
+
+# autofire = AutoFireBot(windowTitle='Quake 3: Arena')
+# autofire.mainLoop()
 
 # keyboardListener = KeyboardInputHandler()
 

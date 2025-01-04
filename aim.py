@@ -170,11 +170,66 @@ class AutoAimBot:
 
 class AutoFireBot:
     
-    def __init__(self):
-        raise NotImplementedError
+    def __init__(self, windowTitle):
+        self.windowTitle = windowTitle
+        self.mouse = Mouse()
+        
+        self.hWnd = WindowHandler(windowTitle=windowTitle)
+        
+        self.frameProc = FrameProcessorCV()
+        self.frameDebugger = FrameDebugger()
+        
+    def getTargetCentroids(self, bboxes) -> List[Tuple[int, int]]:
+        return [(x + w // 2, y + h // 2) for x, y, w, h in bboxes]
+    
+    def shouldFire(self, frame: np.ndarray, bboxes: List[np.ndarray]) -> bool:
+        
+        fw, fh = frame.shape[:2]
+        
+        cursor = np.array([fw // 2, fh // 2])
+        
+        # if any of cursor pos (center of the frame) is inside bboxes (- random adjustment)
+        def cursorInside(bbox) -> bool:
+            x, y, w, h = bbox
+            cy, cx = cursor
+            return (x <= cx <= x + w) and (y <= cy <= y + h)
+        
+        return any(tuple(map(cursorInside, bboxes)))
+        
     
     def mainLoop(self):
-        raise NotImplementedError
+        self.hWnd.focusCurrentWindow()
+        
+        while True:
+            
+            if cv.waitKey(1) & 0xFF == ord('q'):
+                break
+            
+            prevTime = time.time()
+            
+            currentFrame = self.hWnd.takeScreenshot()
+            processedFrame, bboxes = self.frameProc.simpleVisionPipeline(currentFrame)
+            
+            _shouldFire = self.shouldFire(processedFrame, bboxes)
+            if _shouldFire:
+                self.mouse.click('left')
+            
+            currTime = time.time()
+            
+            dt = currTime - prevTime
+            fps = int(1 / dt)
+            debugInfo = {
+                'fps': fps,
+                'shouldFire': _shouldFire,
+                'bboxes': bboxes
+            }
+            
+            resFrame = self.frameDebugger(processedFrame.copy(), debugInfo)
+            
+            cv.imshow(f"Aimbot eyes", resFrame)
+
+        cv.destroyAllWindows()
+    
 
 
 

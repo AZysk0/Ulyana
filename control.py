@@ -8,11 +8,13 @@ Real = Union[float | int]
 
 @dataclass(frozen=True)
 class PIDParams:
-    kp: float = 5
-    ki: float = 0.5
-    kd: float = 0.05
-    intMinLimit: float = -10
-    intMaxLimit: float = 10
+    kp: float = 5.0
+    ki: float = 0.6
+    kd: float = 0.07
+    intMinLimit: float = -30
+    intMaxLimit: float = 30
+    derMinLimit: float = -50
+    derMaxLimit: float = 50
 
 
 class PIDController:
@@ -44,7 +46,9 @@ class PIDController:
         self.iTerm += error * dt
         self.iTerm = max(min(self.iTerm, self.params.intMaxLimit), self.params.intMinLimit)
 
-        self.dTerm = (error - self.prevError) / dt
+        # self.dTerm = (error - self.prevError) / dt
+        raw_dTerm = (error - self.prevError) / dt
+        self.dTerm = max(min(raw_dTerm, self.params.derMaxLimit), self.params.derMinLimit)
 
         self.prevError = error
 
