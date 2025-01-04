@@ -1,5 +1,6 @@
 import ctypes
-from typing import Tuple, Any, Literal
+
+from typing import Tuple, Any, Literal, Set
 
 
 class Mouse:
@@ -69,24 +70,44 @@ class Mouse:
         raise NotImplementedError
 
 
-class Keyboard:
-    
-    def __init__(self):
-        raise NotImplementedError
-    
-    def pressBtn(self, btn: str) -> None:
-        raise NotImplementedError
-
-
 class KeyboardInputHandler:
+    VK_CODES = {
+        "BACKSPACE": 0x08,
+        "TAB": 0x09,
+        "ENTER": 0x0D,
+        "SHIFT": 0x10,
+        "CTRL": 0x11,
+        "ALT": 0x12,
+        "ESC": 0x1B,
+        "SPACE": 0x20,
+        "LEFT_ARROW": 0x25,
+        "UP_ARROW": 0x26,
+        "RIGHT_ARROW": 0x27,
+        "DOWN_ARROW": 0x28,
+        **{chr(i): i for i in range(0x30, 0x5A + 1)},  # alphanumeric
+    }
     
+    INVERSE_MAP = {v: k for k, v in VK_CODES.items()}
+
     def __init__(self):
-        raise NotImplementedError
-    
-    def currentKey(self):
-        raise NotImplementedError
-    
-    def getState(self):
-        raise NotImplementedError
+        pass
+
+    def getState(self) -> Set[str]:
+        '''human-readable'''
+        pressed_keys = set()
+        for name, vk in self.VK_CODES.items():
+            if ctypes.windll.user32.GetAsyncKeyState(vk) & 0x8000:
+                pressed_keys.add(name)
+        return pressed_keys
+
+    def getStateHex(self) -> Set[str]:
+        """not-human-readable"""
+        pressed_keys = set()
+        for vk_code in range(0x08, 0xFE):
+            if ctypes.windll.user32.GetAsyncKeyState(vk_code) & 0x8000:
+                key_name = self.INVERSE_MAP.get(vk_code, f"VK_{vk_code}")
+                pressed_keys.add(key_name)
+        return pressed_keys
 
 
+    

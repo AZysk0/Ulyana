@@ -1,13 +1,26 @@
 import time
 import math
-from events import Mouse
+from events import Mouse, KeyboardInputHandler
+import ctypes
 
 from aim import AutoAimBot
 
-mouse = Mouse()
+# mouse = Mouse()
+# aimbot = AutoAimBot(windowTitle='Quake 3: Arena')
+# aimbot.mainLoop()
 
-aimbot = AutoAimBot(windowTitle='Quake 3: Arena')
+keyboardListener = KeyboardInputHandler()
 
-aimbot.mainLoop()
+def main():
+    try:
+        while True:
+            keysPressed = keyboardListener.getState()
+            if keysPressed:
+                print(f"Keys pressed: {keysPressed}")
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("Exiting...")
 
 
+if __name__ == "__main__":
+    main()
