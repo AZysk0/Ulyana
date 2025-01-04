@@ -14,6 +14,11 @@ import win32api
 from typing import Optional, Dict, Any
 
 
+# TODO:
+# high-fps window capture (win32 api?)
+# OpenGL q3-hook 
+# 
+
 
 class WindowHandler:
     '''

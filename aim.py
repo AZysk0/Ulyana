@@ -192,7 +192,9 @@ class AutoFireBot:
         def cursorInside(bbox) -> bool:
             x, y, w, h = bbox
             cy, cx = cursor
-            return (x <= cx <= x + w) and (y <= cy <= y + h)
+            epsX = h * 0.1 * random.random()
+            epsY = h * 0.1 * random.random()
+            return (x <= cx <= x + w - epsX) and (y <= cy <= y + h - epsY)
         
         return any(tuple(map(cursorInside, bboxes)))
         
