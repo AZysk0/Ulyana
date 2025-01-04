@@ -11,6 +11,12 @@ from vision import FrameProcessorCV, ProcessingParams, FrameDebugger
 import utils
 
 from typing import List, Tuple, Iterable, Any
+from dataclasses import dataclass
+
+# ==== some constants ===
+RESET_TARGET_KEY = '1'
+TRACK_TARGET_KEY = 'SHIFT'
+# =======================
 
 
 class AutoAimBot:
@@ -102,25 +108,48 @@ class AutoAimBot:
         while True:
             # self.hWnd.focusCurrentWindow()
             
-            currentKeystate = self.keyboardListener._currentState
+            if cv.waitKey(1) & 0xFF == ord('q'):
+                break
             
+            currentPressedKeys = self.keyboardListener._currentState
             prevTime = time.time()
-            
             currentFrame = self.hWnd.takeScreenshot()
-            
             processedFrame, bboxes = self.frameProc(currentFrame)
             
             if not bboxes:
                 self.resetTarget()
+                
+            if RESET_TARGET_KEY in self.keyboardListener.releasedKeys:
+                self.resetTarget()
+                
+            if not (TRACK_TARGET_KEY in currentPressedKeys):
+                # next iteration
+                
+                currTime = time.time()
+                dt = currTime - prevTime
+                
+                # self.chooseTarget(bboxes)
+                # self.update(dt, currentFrame)
+                self.updateCurrentTarget(bboxes)
+                
+                dtDebug = time.time() - prevTime
+                fps = int(1 / dtDebug)
+                
+                debugInfo = {
+                    'fps': fps,
+                    'bboxes': bboxes
+                }
+                
+                resFrame = self.frameDebugger(processedFrame, debugInfo)
+                cv.imshow(f"Aimbot eyes", resFrame)
+                
+                continue
             
             currTime = time.time()
             dt = currTime - prevTime
             
             self.chooseTarget(bboxes)
             self.update(dt, currentFrame)
-            
-            if cv.waitKey(1) & 0xFF == ord('q'):
-                break
             
             dtDebug = time.time() - prevTime
             fps = int(1 / dtDebug)
@@ -132,6 +161,7 @@ class AutoAimBot:
             
             resFrame = self.frameDebugger(processedFrame, debugInfo)
             self.updateCurrentTarget(bboxes)
+            self.keyboardListener.updateKeyboard()  # update keyboard state (prev)
             
             cv.imshow(f"Aimbot eyes", resFrame)
         

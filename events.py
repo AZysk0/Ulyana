@@ -91,7 +91,7 @@ class KeyboardInputHandler:
 
     def __init__(self):
         self.prevState: Set[str] = set()  # human-readable
-        self._previousStateHex
+        self._previousStateHex = set()
 
     @property
     def _currentState(self) -> Set[str]:
