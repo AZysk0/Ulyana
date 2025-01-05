@@ -4,11 +4,12 @@ import random
 import cv2 as cv
 import time
 
-from hwnd import WindowHandler
+from hwnd import WindowHandler, WindowCaptureMSS
 from events import Mouse, KeyboardInputHandler
 from control import PIDController, PIDParams
-from vision import FrameProcessorCV, ProcessingParams, FrameDebugger
+from vision import FrameProcessorCV, ProcessingParams
 import utils
+from debug import FrameDebugger, DebugFPS
 
 from typing import List, Tuple, Iterable, Any
 from dataclasses import dataclass
@@ -16,6 +17,7 @@ from dataclasses import dataclass
 # ==== some constants ===
 RESET_TARGET_KEY = '1'
 TRACK_TARGET_KEY = 'SHIFT'
+CLOSE_KEY = '9'
 # =======================
 
 
@@ -30,7 +32,7 @@ class AutoAimBot:
         self.yawController = PIDController()
         self.pitchController = PIDController()
         
-        self.hWnd = WindowHandler(windowTitle=windowTitle)
+        self.hWnd = WindowCaptureMSS(windowTitle=windowTitle)
         self.mouseController = Mouse()
         self.keyboardListener = KeyboardInputHandler()
         
@@ -38,6 +40,7 @@ class AutoAimBot:
         self.frameProc = FrameProcessorCV(params=self.processingParams)
         
         self.frameDebugger = FrameDebugger()
+        self.fpsDebugger = DebugFPS(sz=20)
         
         self.prevTargetPos: Tuple[int, int] | None = None  # pos on image
 
@@ -108,10 +111,11 @@ class AutoAimBot:
         while True:
             # self.hWnd.focusCurrentWindow()
             
-            if cv.waitKey(1) & 0xFF == ord('q'):
+            currentPressedKeys = self.keyboardListener._currentState
+            
+            if (cv.waitKey(1) & 0xFF == ord('q')) or (CLOSE_KEY in currentPressedKeys):
                 break
             
-            currentPressedKeys = self.keyboardListener._currentState
             prevTime = time.time()
             currentFrame = self.hWnd.takeScreenshot()
             processedFrame, bboxes = self.frameProc(currentFrame)
@@ -132,7 +136,9 @@ class AutoAimBot:
                 # self.update(dt, currentFrame)
                 self.updateCurrentTarget(bboxes)
                 
-                dtDebug = time.time() - prevTime
+                self.fpsDebugger.append(dt)
+                
+                dtDebug = self.fpsDebugger.average
                 fps = int(1 / dtDebug)
                 
                 debugInfo = {
@@ -151,7 +157,9 @@ class AutoAimBot:
             self.chooseTarget(bboxes)
             self.update(dt, currentFrame)
             
-            dtDebug = time.time() - prevTime
+            self.fpsDebugger.append(dt)
+                
+            dtDebug = self.fpsDebugger.average
             fps = int(1 / dtDebug)
             
             debugInfo = {
@@ -172,12 +180,16 @@ class AutoFireBot:
     
     def __init__(self, windowTitle):
         self.windowTitle = windowTitle
-        self.mouse = Mouse()
         
-        self.hWnd = WindowHandler(windowTitle=windowTitle)
+        self.mouse = Mouse()
+        self.keyboardHandler = KeyboardInputHandler()
+        
+        self.hWnd = WindowCaptureMSS(windowTitle=windowTitle)
         
         self.frameProc = FrameProcessorCV()
+        
         self.frameDebugger = FrameDebugger()
+        self.fpsDebugger = DebugFPS(sz=20)
         
     def getTargetCentroids(self, bboxes) -> List[Tuple[int, int]]:
         return [(x + w // 2, y + h // 2) for x, y, w, h in bboxes]
@@ -194,7 +206,7 @@ class AutoFireBot:
             cy, cx = cursor
             epsX = h * 0.1 * random.random()
             epsY = h * 0.1 * random.random()
-            return (x <= cx <= x + w - epsX) and (y <= cy <= y + h - epsY)
+            return (x + epsX <= cx <= x + w - epsX) and (y + epsY <= cy <= y + h - epsY)
         
         return any(tuple(map(cursorInside, bboxes)))
         
@@ -204,7 +216,9 @@ class AutoFireBot:
         
         while True:
             
-            if cv.waitKey(1) & 0xFF == ord('q'):
+            currentPressedKeys = self.keyboardHandler._currentState
+            
+            if (cv.waitKey(1) & 0xFF == ord('q')) or (CLOSE_KEY in currentPressedKeys):
                 break
             
             prevTime = time.time()
@@ -219,10 +233,14 @@ class AutoFireBot:
             currTime = time.time()
             
             dt = currTime - prevTime
-            fps = int(1 / dt)
+            
+            self.fpsDebugger.append(dt)
+                
+            dtDebug = self.fpsDebugger.average
+            fps = int(1 / dtDebug)
+            
             debugInfo = {
                 'fps': fps,
-                'shouldFire': _shouldFire,
                 'bboxes': bboxes
             }
             

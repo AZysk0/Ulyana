@@ -1,4 +1,4 @@
-from hwnd import WindowHandler, WindowCapture
+from hwnd import WindowHandler, WindowCaptureWin32
 from vision import FrameProcessorCV, ProcessingParams, FrameDebugger
 import cv2 as cv
 from time import time
