@@ -9,11 +9,11 @@ from aim import AutoAimBot, AutoFireBot
 from debug import DebugFPS, FrameDebugger
 
 # mouse = Mouse()
-# aimbot = AutoAimBot(windowTitle='Quake 3: Arena')
-# aimbot.mainLoop()
+aimbot = AutoAimBot(windowTitle='Quake 3: Arena')
+aimbot.mainLoop()
 
-autofire = AutoFireBot(windowTitle='Quake 3: Arena')
-autofire.mainLoop()
+# autofire = AutoFireBot(windowTitle='Quake 3: Arena')
+# autofire.mainLoop()
 
 # windowCapture = WindowCaptureWin32(windowTitle='Quake 3: Arena')
 # windowCapture = WindowCaptureWin32(windowTitle='Windows PowerShell')

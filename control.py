@@ -8,13 +8,13 @@ Real = Union[float | int]
 
 @dataclass(frozen=True)
 class PIDParams:
-    kp: float = 5.0
-    ki: float = 0.6
-    kd: float = 0.07
-    intMinLimit: float = -30
-    intMaxLimit: float = 30
-    derMinLimit: float = -50
-    derMaxLimit: float = 50
+    kp: float = 4.0
+    ki: float = 0.2
+    kd: float = 0.3
+    intMinLimit: float = -20
+    intMaxLimit: float = 20
+    derMinLimit: float = -100
+    derMaxLimit: float = 100
 
 
 class PIDController:

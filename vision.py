@@ -35,6 +35,11 @@ class ProcessingParams:
 
 
 class FrameProcessorCV:
+    # bbox filtering params
+    xCenterMin = 135
+    xCenterMax = float('inf')
+    yCenterMin = 0
+    yCenterMax = float('inf')
     
     def __init__(self, params: ProcessingParams=ProcessingParams()):
         self.params = params
@@ -52,6 +57,22 @@ class FrameProcessorCV:
 
         return mask
     
+    def clearMaskArea(self, mask: np.ndarray):
+        maskCp = mask.copy()
+        
+        cleared_mask = np.zeros_like(mask, dtype=np.uint8)
+    
+        # valid region
+        x_min = max(self.xCenterMin, 0)
+        x_max = min(self.xCenterMax, mask.shape[1])
+        y_min = max(self.yCenterMin, 0)
+        y_max = min(self.yCenterMax, mask.shape[0])
+        
+        cleared_mask[y_min:y_max, x_min:x_max] = mask[y_min:y_max, x_min:x_max]
+        
+        return cleared_mask
+        
+    
     def maskMorphologyPipeline(self, mask):
     
         maskCp = mask.copy()
@@ -62,7 +83,10 @@ class FrameProcessorCV:
         closedMask = cv.morphologyEx(openedMask, cv.MORPH_CLOSE, kernel)
         dilatedMask = cv.morphologyEx(closedMask, cv.MORPH_DILATE, kernel, iterations=9)
         
-        return dilatedMask
+        roiMask = self.clearMaskArea(dilatedMask)
+        
+        # return dilatedMask
+        return roiMask
     
     def separateObjects(self, mask):
         # Ensure the mask is binary (0 or 255 values)

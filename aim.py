@@ -20,8 +20,17 @@ TRACK_TARGET_KEY = 'SHIFT'
 CLOSE_KEY = '9'
 # =======================
 
+def debug(title, frame, dt):
+    
+    return
+
 
 class AutoAimBot:
+    # bbox filtering params (valid is inside this rect)
+    xCenterMin = 135
+    xCenterMax = float('inf')
+    yCenterMin = 0
+    yCenterMax = float('inf')
     
     def __init__(
         self, 
@@ -43,9 +52,23 @@ class AutoAimBot:
         self.fpsDebugger = DebugFPS(sz=20)
         
         self.prevTargetPos: Tuple[int, int] | None = None  # pos on image
-
+    
     def getTargetCentroids(self, bboxes) -> List[Tuple[int, int]]:
         return [(x + w // 2, y + h // 2) for x, y, w, h in bboxes]
+    
+    def filterBboxes(self, bboxes):
+        
+        def isValid(bbox) -> bool:
+            x, y, w, h = bbox
+            cx, cy = x + w // 2, y + h // 2
+            
+            if self.xCenterMin <= cx <= self.xCenterMax and self.yCenterMin <= cy <= self.yCenterMax:
+                return True
+        
+            return False
+        
+        return list(filter(isValid, bboxes))
+    
     
     def chooseTarget(self, bboxes) -> None:  # side-effect
         
@@ -60,8 +83,13 @@ class AutoAimBot:
             _, _, w, h = bbox
             return w * h
         
+        validBboxes = self.filterBboxes(bboxes)
+        if not validBboxes:
+            self.resetTarget()
+            return
+        
         # get random target from top 3 largest (nearest to player in-game) bboxes
-        targetBboxesSorted = sorted(bboxes, key=bboxArea, reverse=True)
+        targetBboxesSorted = sorted(validBboxes, key=bboxArea, reverse=True)
         randomTargetBbox = random.choice(targetBboxesSorted[:3])
         targetCentroid = self.getTargetCentroids([randomTargetBbox])[0]
         self.prevTargetPos = targetCentroid
@@ -104,6 +132,20 @@ class AutoAimBot:
 
             self.mouseController.moveBy(int(yawAdjustment), int(pitchAdjustment))
     
+    def debugDrawValidBboxArea(self, frame: np.ndarray):
+        lineColor = (0, 255, 0)
+        thickness = 2
+        
+        if self.yCenterMin != float('-inf'):
+            cv.line(frame, (0, self.yCenterMin), (frame.shape[1], self.yCenterMin), lineColor, thickness)
+        if self.yCenterMax != float('inf'):
+            cv.line(frame, (0, self.yCenterMax), (frame.shape[1], self.yCenterMax), lineColor, thickness)
+        
+        if self.xCenterMin != float('-inf'):
+            cv.line(frame, (self.xCenterMin, 0), (self.xCenterMin, frame.shape[0]), lineColor, thickness)
+        if self.xCenterMax != float('inf'):
+            cv.line(frame, (self.xCenterMax, 0), (self.xCenterMax, frame.shape[0]), lineColor, thickness)
+    
     def mainLoop(self):
         
         self.hWnd.focusCurrentWindow()
@@ -136,18 +178,18 @@ class AutoAimBot:
                 # self.update(dt, currentFrame)
                 self.updateCurrentTarget(bboxes)
                 
-                self.fpsDebugger.append(dt)
+                # self.fpsDebugger.append(dt)
+                # dtDebug = self.fpsDebugger.average
+                # fps = int(1 / dtDebug)
                 
-                dtDebug = self.fpsDebugger.average
-                fps = int(1 / dtDebug)
+                # debugInfo = {
+                #     'fps': fps,
+                #     'bboxes': bboxes
+                # }
                 
-                debugInfo = {
-                    'fps': fps,
-                    'bboxes': bboxes
-                }
-                
-                resFrame = self.frameDebugger(processedFrame, debugInfo)
-                cv.imshow(f"Aimbot eyes", resFrame)
+                # resFrame = self.frameDebugger(processedFrame, debugInfo)
+                # self.debugDrawValidBboxArea(resFrame)
+                # cv.imshow(f"Aimbot eyes", resFrame)
                 
                 continue
             
@@ -157,21 +199,21 @@ class AutoAimBot:
             self.chooseTarget(bboxes)
             self.update(dt, currentFrame)
             
-            self.fpsDebugger.append(dt)
-                
-            dtDebug = self.fpsDebugger.average
-            fps = int(1 / dtDebug)
+            # self.fpsDebugger.append(dt)
+            # dtDebug = self.fpsDebugger.average
+            # fps = int(1 / dtDebug)
+            # debugInfo = {
+            #     'fps': fps,
+            #     'bboxes': bboxes
+            # }
             
-            debugInfo = {
-                'fps': fps,
-                'bboxes': bboxes
-            }
+            # resFrame = self.frameDebugger(processedFrame, debugInfo)
+            # self.debugDrawValidBboxArea(resFrame)
             
-            resFrame = self.frameDebugger(processedFrame, debugInfo)
             self.updateCurrentTarget(bboxes)
             self.keyboardListener.updateKeyboard()  # update keyboard state (prev)
             
-            cv.imshow(f"Aimbot eyes", resFrame)
+            # cv.imshow(f"Aimbot eyes", resFrame)
         
         cv.destroyAllWindows()
 
@@ -209,7 +251,6 @@ class AutoFireBot:
             return (x + epsX <= cx <= x + w - epsX) and (y + epsY <= cy <= y + h - epsY)
         
         return any(tuple(map(cursorInside, bboxes)))
-        
     
     def mainLoop(self):
         self.hWnd.focusCurrentWindow()
@@ -234,19 +275,18 @@ class AutoFireBot:
             
             dt = currTime - prevTime
             
-            self.fpsDebugger.append(dt)
+            # self.fpsDebugger.append(dt)
                 
-            dtDebug = self.fpsDebugger.average
-            fps = int(1 / dtDebug)
+            # dtDebug = self.fpsDebugger.average
+            # fps = int(1 / dtDebug)
             
-            debugInfo = {
-                'fps': fps,
-                'bboxes': bboxes
-            }
+            # debugInfo = {
+            #     'fps': fps,
+            #     'bboxes': bboxes
+            # }
             
-            resFrame = self.frameDebugger(processedFrame.copy(), debugInfo)
-            
-            cv.imshow(f"Aimbot eyes", resFrame)
+            # resFrame = self.frameDebugger(processedFrame.copy(), debugInfo)
+            # cv.imshow(f"Aimbot eyes", resFrame)
 
         cv.destroyAllWindows()
     
