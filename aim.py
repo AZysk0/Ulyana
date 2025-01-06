@@ -35,11 +35,13 @@ class AutoAimBot:
     def __init__(
         self, 
         windowTitle: str, 
-        processingParams: ProcessingParams=ProcessingParams()
+        processingParams: ProcessingParams=ProcessingParams(),
+        pidParams=PIDParams()
     ) -> None:
         
-        self.yawController = PIDController()
-        self.pitchController = PIDController()
+        # same PID params for yaw and pitch
+        self.yawController = PIDController(params=pidParams)
+        self.pitchController = PIDController(params=pidParams)
         
         self.hWnd = WindowCaptureMSS(windowTitle=windowTitle)
         self.mouseController = Mouse()
@@ -220,7 +222,13 @@ class AutoAimBot:
 
 class AutoFireBot:
     
-    def __init__(self, windowTitle):
+    def __init__(
+        self, 
+        windowTitle, 
+        processingParams=ProcessingParams(),
+        pidParams=PIDParams()
+    ) -> None:
+        
         self.windowTitle = windowTitle
         
         self.mouse = Mouse()
