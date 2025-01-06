@@ -20,7 +20,9 @@ TRACK_TARGET_KEY = 'SHIFT'
 CLOSE_KEY = '9'
 # =======================
 
-def debug(title, frame, dt):
+def debug(title, debugFrame, debugInfo):
+    
+    cv.imshow(title, debugFrame)
     
     return
 
@@ -36,7 +38,8 @@ class AutoAimBot:
         self, 
         windowTitle: str, 
         processingParams: ProcessingParams=ProcessingParams(),
-        pidParams=PIDParams()
+        pidParams=PIDParams(),
+        debug=False,
     ) -> None:
         
         # same PID params for yaw and pitch
@@ -50,6 +53,7 @@ class AutoAimBot:
         self.processingParams = ProcessingParams()
         self.frameProc = FrameProcessorCV(params=self.processingParams)
         
+        self.debug = debug
         self.frameDebugger = FrameDebugger()
         self.fpsDebugger = DebugFPS(sz=20)
         
@@ -70,7 +74,6 @@ class AutoAimBot:
             return False
         
         return list(filter(isValid, bboxes))
-    
     
     def chooseTarget(self, bboxes) -> None:  # side-effect
         
@@ -148,6 +151,24 @@ class AutoAimBot:
         if self.xCenterMax != float('inf'):
             cv.line(frame, (self.xCenterMax, 0), (self.xCenterMax, frame.shape[0]), lineColor, thickness)
     
+    def debugFrame(
+        self, 
+        frame: np.ndarray, 
+        bboxes: List
+    ) -> None:
+        '''pass output of the vision pipeline'''
+        dtDebug = self.fpsDebugger.average
+        fps = int(1 / dtDebug)
+        
+        debugInfo = {
+            'fps': fps,
+            'bboxes': bboxes
+        }
+        
+        resFrame = self.frameDebugger(frame, debugInfo)
+        self.debugDrawValidBboxArea(resFrame)
+        cv.imshow(f"Aimbot eyes", resFrame)
+    
     def mainLoop(self):
         
         self.hWnd.focusCurrentWindow()
@@ -192,6 +213,9 @@ class AutoAimBot:
                 # resFrame = self.frameDebugger(processedFrame, debugInfo)
                 # self.debugDrawValidBboxArea(resFrame)
                 # cv.imshow(f"Aimbot eyes", resFrame)
+                if self.debug:
+                    self.fpsDebugger.append(dt)
+                    self.debugFrame(processedFrame, bboxes)
                 
                 continue
             
@@ -200,6 +224,9 @@ class AutoAimBot:
             
             self.chooseTarget(bboxes)
             self.update(dt, currentFrame)
+            
+            self.updateCurrentTarget(bboxes)
+            self.keyboardListener.updateKeyboard()  # update keyboard state (prev)
             
             # self.fpsDebugger.append(dt)
             # dtDebug = self.fpsDebugger.average
@@ -211,11 +238,10 @@ class AutoAimBot:
             
             # resFrame = self.frameDebugger(processedFrame, debugInfo)
             # self.debugDrawValidBboxArea(resFrame)
-            
-            self.updateCurrentTarget(bboxes)
-            self.keyboardListener.updateKeyboard()  # update keyboard state (prev)
-            
             # cv.imshow(f"Aimbot eyes", resFrame)
+            if self.debug:
+                self.fpsDebugger.append(dt)
+                self.debugFrame(processedFrame, bboxes)
         
         cv.destroyAllWindows()
 
@@ -226,7 +252,8 @@ class AutoFireBot:
         self, 
         windowTitle, 
         processingParams=ProcessingParams(),
-        pidParams=PIDParams()
+        pidParams=PIDParams(),
+        debug=False
     ) -> None:
         
         self.windowTitle = windowTitle
@@ -238,6 +265,7 @@ class AutoFireBot:
         
         self.frameProc = FrameProcessorCV()
         
+        self.debug = debug
         self.frameDebugger = FrameDebugger()
         self.fpsDebugger = DebugFPS(sz=20)
         
@@ -259,6 +287,25 @@ class AutoFireBot:
             return (x + epsX <= cx <= x + w - epsX) and (y + epsY <= cy <= y + h - epsY)
         
         return any(tuple(map(cursorInside, bboxes)))
+    
+    def debugFrame(
+        self, 
+        frame: np.ndarray, 
+        debugInfo
+    ) -> None:
+        '''pass output of the vision pipeline'''
+        dtDebug = self.fpsDebugger.average
+        fps = int(1 / dtDebug)
+        
+        # debugInfo = {
+        #     'fps': fps,
+        #     'shouldFire': 
+        #     'bboxes': bboxes,
+        # }
+        
+        resFrame = self.frameDebugger(frame, debugInfo)
+        # self.debugDrawValidBboxArea(resFrame)
+        cv.imshow(f"Aimbot eyes", resFrame)
     
     def mainLoop(self):
         self.hWnd.focusCurrentWindow()
@@ -283,6 +330,17 @@ class AutoFireBot:
             
             dt = currTime - prevTime
             
+            if self.debug:
+                self.fpsDebugger.append(dt)
+                fps = int(1 / self.fpsDebugger.average)
+                debugInfo = {
+                    'fps': fps,
+                    'shouldFire': _shouldFire,
+                    'bboxes': bboxes
+                }
+                self.debugFrame(processedFrame, debugInfo)
+            
+            # debugging pipeline
             # self.fpsDebugger.append(dt)
                 
             # dtDebug = self.fpsDebugger.average

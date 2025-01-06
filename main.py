@@ -13,20 +13,29 @@ from aim import AutoAimBot, AutoFireBot
 # ====== Main functions =========
 def runAutoAim(
     procParams: ProcessingParams=ProcessingParams(),
-    pidParams: PIDParams=PIDParams()
+    pidParams: PIDParams=PIDParams(),
+    debug: bool=False,
 ) -> None:
     
     autoAimBot = AutoAimBot(
         windowTitle='Quake 3: Arena', 
         processingParams=procParams,
-        pidParams=pidParams
+        pidParams=pidParams,
+        debug=debug,
     )
     autoAimBot.mainLoop()
 
 
-def runAutoFire(procParams: ProcessingParams=ProcessingParams()):
+def runAutoFire(
+    procParams: ProcessingParams=ProcessingParams(),
+    debug: bool=False,
+):
     
-    autoFireBot = AutoFireBot(windowTitle='Quake 3: Arena', processingParams=procParams)
+    autoFireBot = AutoFireBot(
+        windowTitle='Quake 3: Arena', 
+        processingParams=procParams,
+        debug=debug,
+    )
     autoFireBot.mainLoop()
 
 
@@ -48,7 +57,15 @@ def main(
     morphKernelSize: tuple,
     pid: list,
 ) -> None:
-    
+    print({
+        'mode': mode,
+        'debug': debug,
+        'hsvmin': hsvmin,
+        'hsvmax': hsvmax,
+        'gaussianBlurSize': gaussianBlurSize,
+        'morphKernelSize': morphKernelSize,
+        'pid': pid,
+    })
     frameProcDict = {
         'hsvmin': hsvmin,
         'hsvmax': hsvmax,
@@ -60,11 +77,11 @@ def main(
     
     if mode.lower() == 'autoaim':
         pidParams = cmd_helper.constructPIDParams(pidCoefs=pid)
-        runAutoAim(procParams=frameProcParams, pidParams=pidParams)
+        runAutoAim(procParams=frameProcParams, pidParams=pidParams, debug=debug)
         return
         
     elif mode.lower() == 'autofire':
-        runAutoFire()
+        runAutoFire(procParams=frameProcParams, debug=debug)
         return
     
     raise ValueError('Mode must ne one of these: autoaim, autofire')

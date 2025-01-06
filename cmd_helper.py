@@ -11,7 +11,6 @@ class ClickLiteralOption(click.Option):
     '''helper to pass list to '''
     
     def type_cast_value(self, ctx, value):
-        ''''''
         try:
             return ast.literal_eval(value)
         except:
