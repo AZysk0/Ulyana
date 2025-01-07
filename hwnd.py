@@ -1,19 +1,12 @@
 import numpy as np
 import cv2 as cv
-from PIL import Image
-import pygetwindow as gw
 import mss
-import pyautogui
 
-from ctypes import windll, create_unicode_buffer
 import win32gui
 import win32ui
 import win32con
 import win32api
 import win32com.client
-
-from typing import Optional, Dict, Any
-
 
 # TODO:
 # high-fps window capture (win32 api?)
@@ -140,92 +133,5 @@ class WindowCaptureMSS(WindowCaptureAbstract):
             
             img = np.array(screenshot)[:, :, :3]
             return img
-
-
-
-
-
-# ===================== Some shit i probably will never use ==========
-
-class WindowHandler:
-    '''
-    class for capturing frames from chosen window
-    '''
-    
-    def __init__(self, windowTitle: str) -> None:
-        self.windowTitle = windowTitle
-        self.hwnd = self._findWindow()
-    
-    def _findWindow(self) -> Optional[gw.Window]:
-        '''method for setting up an object of this class'''
-        
-        windows = gw.getWindowsWithTitle(self.windowTitle)
-        if not windows:
-            raise ValueError(f"Window with title '{self.windowTitle}' not found")
-        return windows[0]
-
-    @staticmethod
-    def getForegroundWindowTitle() -> Optional[str]:
-        hWnd = windll.user32.GetForegroundWindow()
-        length = windll.user32.GetWindowTextLengthW(hWnd)
-        buf = create_unicode_buffer(length + 1)
-        windll.user32.GetWindowTextW(hWnd, buf, length + 1)
-    
-        return buf.value if buf.value else None
-
-    def focusCurrentWindow(self) -> None:
-        if self.hwnd is None:
-            raise RuntimeError("Window is not set. Unable to focus.")
-        
-        if WindowHandler.getForegroundWindowTitle() != self.windowTitle:
-            self.hwnd.activate()
-
-    def takeScreenshot(self) -> np.ndarray:
-        if not self.hwnd:
-            raise RuntimeError("Window is not set. Unable to take screenshot.")
-        
-        region = (
-            self.hwnd.left,
-            self.hwnd.top,
-            self.hwnd.width,
-            self.hwnd.height
-        )
-        # slow: 25 fps at most
-        screenshot = np.array(pyautogui.screenshot(region=region))
-        # return cv.cvtColor(screenshot, cv.COLOR_BGR2RGB)
-        return screenshot
-
-    def windowIsFocused(self):
-        
-        return
-    
-    def isWindowValid(self) -> bool:
-        try:
-            return self._findWindow() is not None
-        except ValueError:
-            return False
-
-    def logWindowInfo(self) -> None:
-        if self.hwnd:
-            print(f"Window Title: {self.hwnd.title}")
-            print(f"Position: ({self.hwnd.left}, {self.hwnd.top})")
-            print(f"Size: {self.hwnd.width}x{self.hwnd.height}")
-        else:
-            print("No window is currently selected.")
-            
-    def getLogWindowInfo(self) -> Dict[str, Any]:
-        if self.hwnd:
-            return {
-                "title": self.hwnd.title,
-                "position": {"x": self.hwnd.left, "y": self.hwnd.top},
-                "size": {"width": self.hwnd.width, "height": self.hwnd.height},
-            }
-        else:
-            return {}
-
-    def debugScreenshot(self, save_path: str = "screenshot.png") -> None:
-        raise NotImplementedError
-
-
 
 

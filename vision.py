@@ -1,7 +1,7 @@
 import numpy as np
 import cv2 as cv
 
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Tuple, List
 from dataclasses import dataclass, field
 
 
